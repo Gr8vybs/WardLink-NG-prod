@@ -72,3 +72,7 @@ rows from every facility — verified in `src/verify-rls.ts`.
   patient already exists there.
 
 See `packages/shared/src/index.ts` for the full data model.
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
