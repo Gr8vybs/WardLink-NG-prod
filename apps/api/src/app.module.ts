@@ -1,0 +1,50 @@
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { Controller, Get } from "@nestjs/common";
+
+import { AuthModule } from "./auth/auth.module";
+import { SyncMergeModule } from "./sync-merge/sync-merge.module";
+import { ConflictEscalationModule } from "./conflict-escalation/conflict-escalation.module";
+import { AttachmentModule } from "./attachment/attachment.module";
+import { ReferralModule } from "./referral/referral.module";
+import { NotificationModule } from "./notification/notification.module";
+
+import { Patient } from "./entities/patient.entity";
+import { Handoff } from "./entities/handoff.entity";
+import { StructuredField } from "./entities/structured-field.entity";
+import { FieldOp } from "./entities/field-op.entity";
+
+@Controller("health")
+class HealthController {
+  @Get()
+  check() {
+    return { status: "ok", service: "wardlink-ng-api" };
+  }
+}
+
+@Module({
+  imports: [
+    TypeOrmModule.forRoot({
+      type: "postgres",
+      host: process.env.DB_HOST ?? "localhost",
+      port: Number(process.env.DB_PORT ?? 5432),
+      // Deliberately does NOT default to "postgres" — the running app must
+      // always connect as the restricted wardlink_app role so Row-Level
+      // Security is actually enforced. See src/common/tenant-context.ts.
+      username: process.env.DB_USERNAME ?? "wardlink_app",
+      password: process.env.DB_PASSWORD ?? "app_password_change_me",
+      database: process.env.DB_NAME ?? "wardlink_ng",
+      entities: [Patient, Handoff, StructuredField, FieldOp],
+      synchronize: false, // always use migrations — never auto-sync schema
+      migrations: ["dist/migrations/*.js"],
+    }),
+    AuthModule,
+    SyncMergeModule,
+    ConflictEscalationModule,
+    AttachmentModule,
+    ReferralModule,
+    NotificationModule,
+  ],
+  controllers: [HealthController],
+})
+export class AppModule {}
