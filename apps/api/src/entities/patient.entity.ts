@@ -17,4 +17,7 @@ export class Patient {
 
   @Column({ name: "created_at", type: "timestamptz", default: () => "now()" })
   createdAt: Date;
+
+  @Column({ name: "created_by", type: "uuid", nullable: true })
+  createdBy: string | null;
 }

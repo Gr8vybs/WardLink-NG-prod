@@ -13,9 +13,13 @@ import { Patient } from "./entities/patient.entity";
 import { Handoff } from "./entities/handoff.entity";
 import { StructuredField } from "./entities/structured-field.entity";
 import { FieldOp } from "./entities/field-op.entity";
-
 import { User } from "./entities/user.entity";
 import { Device } from "./entities/device.entity";
+import { Facility } from "./entities/facility.entity";
+import { Ward } from "./entities/ward.entity";
+import { FacilityModule } from "./facility/facility.module";
+import { WardModule } from "./ward/ward.module";
+import { PatientModule } from "./patient/patient.module";
 
 @Controller("health")
 class HealthController {
@@ -37,7 +41,7 @@ class HealthController {
       username: process.env.DB_USERNAME ?? "wardlink_app",
       password: process.env.DB_PASSWORD ?? "app_password_change_me",
       database: process.env.DB_NAME ?? "wardlink_ng",
-      entities: [Patient, Handoff, StructuredField, FieldOp, User, Device],
+      entities: [Patient, Handoff, StructuredField, FieldOp, User, Device, Facility, Ward],
       synchronize: false, // always use migrations — never auto-sync schema
       migrations: ["dist/migrations/*.js"],
     }),
@@ -47,6 +51,9 @@ class HealthController {
     AttachmentModule,
     ReferralModule,
     NotificationModule,
+    FacilityModule,
+    WardModule,
+    PatientModule,
   ],
   controllers: [HealthController],
 })
