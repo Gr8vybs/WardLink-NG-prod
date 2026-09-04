@@ -13,7 +13,17 @@ export interface HLC {
 }
 
 export type UserRole = "nurse" | "doctor" | "ward_head" | "director";
-export type AuthType = "individual" | "shared_device";
+export type AuthType = "individual" | "shared_device" | "shared_device_pin_verified";
+
+/** Shape of the decoded JWT payload — shared so the mobile client can
+ * reason about its own token (e.g. checking authType) without guessing. */
+export interface AuthTokenPayload {
+  sub: string | null; // user id — null for a broad shared-device session before PIN verification
+  facilityId: string;
+  role: UserRole | null;
+  authType: AuthType;
+  deviceId: string | null;
+}
 export type DeviceType = "shared_ward_device" | "personal";
 export type HandoffStatus = "open" | "acknowledged";
 export type FieldType = "vitals" | "meds" | "allergies" | "codeStatus";

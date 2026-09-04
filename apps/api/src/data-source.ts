@@ -15,6 +15,6 @@ export const AppDataSource = new DataSource({
   username: process.env.ADMIN_DB_USERNAME ?? "postgres",
   password: process.env.ADMIN_DB_PASSWORD ?? "postgres",
   database: process.env.DB_NAME ?? "wardlink_ng",
-  entities: [Patient, Handoff, StructuredField, FieldOp],
+  entities: [Patient, Handoff, StructuredField, FieldOp, User, Device],
   migrations: ["src/migrations/*.ts"],
 });
