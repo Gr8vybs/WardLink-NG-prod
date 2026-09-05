@@ -16,6 +16,9 @@ export class FieldOp {
   @Column({ type: "jsonb" })
   hlc: { counter: number; deviceId: string; wallClockHint: string };
 
+  @Column({ name: "base_hlc", type: "jsonb", nullable: true })
+  baseHlc: { counter: number; deviceId: string; wallClockHint: string } | null;
+
   @Column({ name: "author_id", type: "uuid" })
   authorId: string;
 

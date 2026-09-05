@@ -102,6 +102,12 @@ export interface FieldOp {
   fieldId: string;
   value: string;
   hlc: HLC;
+  /** The HLC of the field's current value as the device last saw it,
+   * before making this edit. If this no longer matches the field's
+   * actual current HLC at merge time, someone else changed it in
+   * between — that's what makes a write a genuine conflict rather than
+   * just "whoever arrived first". Null for a field's very first write. */
+  baseHlc: HLC | null;
   authorId: string;
   deviceId: string;
   createdAt: string;

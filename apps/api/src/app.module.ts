@@ -13,6 +13,7 @@ import { Patient } from "./entities/patient.entity";
 import { Handoff } from "./entities/handoff.entity";
 import { StructuredField } from "./entities/structured-field.entity";
 import { FieldOp } from "./entities/field-op.entity";
+import { Conflict } from "./entities/conflict.entity";
 import { User } from "./entities/user.entity";
 import { Device } from "./entities/device.entity";
 import { Facility } from "./entities/facility.entity";
@@ -35,13 +36,10 @@ class HealthController {
       type: "postgres",
       host: process.env.DB_HOST ?? "localhost",
       port: Number(process.env.DB_PORT ?? 5432),
-      // Deliberately does NOT default to "postgres" — the running app must
-      // always connect as the restricted wardlink_app role so Row-Level
-      // Security is actually enforced. See src/common/tenant-context.ts.
       username: process.env.DB_USERNAME ?? "wardlink_app",
       password: process.env.DB_PASSWORD ?? "app_password_change_me",
       database: process.env.DB_NAME ?? "wardlink_ng",
-      entities: [Patient, Handoff, StructuredField, FieldOp, User, Device, Facility, Ward],
+      entities: [Patient, Handoff, StructuredField, FieldOp, User, Device, Facility, Ward, Conflict],
       synchronize: false, // always use migrations — never auto-sync schema
       migrations: ["dist/migrations/*.js"],
     }),
