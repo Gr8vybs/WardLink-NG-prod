@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ConflictEscalationService } from "./conflict-escalation.service";
 import { ResolveConflictDto } from "./dto/resolve-conflict.dto";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -21,8 +21,19 @@ export class ConflictEscalationController {
     return this.conflictEscalationService.getDetail(user.facilityId, id);
   }
 
-  // Resolving is attributed to a specific person, same reasoning as every
-  // other clinical-data write in this app.
+  // Manual trigger for the aging sweep — useful for ops ("check right
+  // now") and for testing without waiting for the real cron interval.
+  // Optional ?thresholdMinutes= override, mainly for testing a tighter
+  // window than the configured default.
+  // TODO: once roles are enforced via a guard, restrict this to
+  // ward_head/director rather than any authenticated user.
+  @Post("sweep-now")
+  sweepNow(@Query("thresholdMinutes") thresholdMinutes?: string) {
+    return this.conflictEscalationService.runAgingSweep(
+      thresholdMinutes !== undefined ? Number(thresholdMinutes) : undefined,
+    );
+  }
+
   @UseGuards(RequireIndividualAuthGuard)
   @Patch(":id/resolve")
   resolve(@CurrentUser() user: AuthTokenPayload, @Param("id") id: string, @Body() dto: ResolveConflictDto) {

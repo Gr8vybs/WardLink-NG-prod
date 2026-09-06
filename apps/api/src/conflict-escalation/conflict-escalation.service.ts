@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import { DataSource } from "typeorm";
 import { Conflict } from "../entities/conflict.entity";
 import { FieldOp } from "../entities/field-op.entity";
@@ -90,5 +91,36 @@ export class ConflictEscalationService {
 
       return { conflict, field };
     });
+  }
+
+  /**
+   * Finds every conflict still 'open' past the threshold, across ALL
+   * facilities, and marks it 'escalated'. This is what actually makes
+   * escalation real rather than theoretical — a conflict a busy ward
+   * ignores doesn't just sit there, it becomes visible to a ward head
+   * automatically.
+   *
+   * Runs on a schedule (see handleScheduledSweep below), but is also
+   * exposed as a manual trigger via POST /conflicts/sweep-now — useful
+   * for ops ("check right now") and for testing without waiting for a
+   * real interval to elapse.
+   *
+   * NOTE: wiring this to an actual notification (so a ward head is told
+   * "3 conflicts just escalated") is the natural next piece, once
+   * NotificationModule exists — right now this only flips the status,
+   * which GET /conflicts already surfaces.
+   */
+  async runAgingSweep(thresholdMinutes?: number): Promise<Array<{ id: string; facility_id: string; field_id: string }>> {
+    const threshold = thresholdMinutes ?? Number(process.env.ESCALATION_THRESHOLD_MINUTES ?? 30);
+    return this.dataSource.query(`SELECT * FROM escalate_aging_conflicts($1)`, [threshold]);
+  }
+
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  private async handleScheduledSweep() {
+    const escalated = await this.runAgingSweep();
+    if (escalated.length > 0) {
+      // Placeholder until NotificationModule exists to actually deliver this.
+      console.log(`[escalation-sweep] escalated ${escalated.length} conflict(s)`);
+    }
   }
 }
