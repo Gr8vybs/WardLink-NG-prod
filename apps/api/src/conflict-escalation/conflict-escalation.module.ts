@@ -1,10 +1,16 @@
 import { Module } from "@nestjs/common";
+import { ConflictEscalationService } from "./conflict-escalation.service";
+import { ConflictEscalationController } from "./conflict-escalation.controller";
 
 /**
  * ConflictEscalationModule
- * Tracks open Conflict records, runs the aging sweep, escalates to ward
- * heads past the configured threshold, and enforces the shift-boundary
- * backstop. Placeholder — providers to be added.
+ * Owns the Conflict lifecycle: listing open conflicts, viewing the
+ * competing writes side by side, and resolving. The automatic aging
+ * sweep (escalate to ward head past a threshold) is the next piece to
+ * add here.
  */
-@Module({})
+@Module({
+  controllers: [ConflictEscalationController],
+  providers: [ConflictEscalationService],
+})
 export class ConflictEscalationModule {}
