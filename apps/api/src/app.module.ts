@@ -23,6 +23,10 @@ import { FacilityModule } from "./facility/facility.module";
 import { WardModule } from "./ward/ward.module";
 import { PatientModule } from "./patient/patient.module";
 
+import { Note } from "./entities/note.entity";
+import { Acknowledgment } from "./entities/acknowledgment.entity";
+import { HandoffModule } from "./handoff/handoff.module";
+
 @Controller("health")
 class HealthController {
   @Get()
@@ -40,7 +44,7 @@ class HealthController {
       username: process.env.DB_USERNAME ?? "wardlink_app",
       password: process.env.DB_PASSWORD ?? "app_password_change_me",
       database: process.env.DB_NAME ?? "wardlink_ng",
-      entities: [Patient, Handoff, StructuredField, FieldOp, User, Device, Facility, Ward, Conflict],
+      entities: [Patient, Handoff, StructuredField, FieldOp, User, Device, Facility, Ward, Conflict, Note, Acknowledgment],
       synchronize: false, // always use migrations — never auto-sync schema
       migrations: ["dist/migrations/*.js"],
     }),

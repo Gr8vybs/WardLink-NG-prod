@@ -9,6 +9,8 @@ import { User } from "./entities/user.entity";
 import { Device } from "./entities/device.entity";
 import { Facility } from "./entities/facility.entity";
 import { Ward } from "./entities/ward.entity";
+import { Note } from "./entities/note.entity";
+import { Acknowledgment } from "./entities/acknowledgment.entity";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -17,6 +19,6 @@ export const AppDataSource = new DataSource({
   username: process.env.ADMIN_DB_USERNAME ?? "postgres",
   password: process.env.ADMIN_DB_PASSWORD ?? "postgres",
   database: process.env.DB_NAME ?? "wardlink_ng",
-  entities: [Patient, Handoff, StructuredField, FieldOp, User, Device, Facility, Ward, Conflict],
+  entities: [Patient, Handoff, StructuredField, FieldOp, User, Device, Facility, Ward, Conflict, Note, Acknowledgment],
   migrations: ["src/migrations/*.ts"],
 });
