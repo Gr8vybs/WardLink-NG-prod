@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
+import { AttachmentService } from "./attachment.service";
+import { AttachmentController } from "./attachment.controller";
 
-/**
- * AttachmentModule
- * Chunked/resumable upload handling, decoupled from the lightweight
- * op-log sync path. Placeholder — providers to be added.
- */
-@Module({})
+@Module({
+  controllers: [AttachmentController],
+  providers: [AttachmentService],
+})
 export class AttachmentModule {}

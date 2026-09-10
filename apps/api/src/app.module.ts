@@ -27,6 +27,10 @@ import { Note } from "./entities/note.entity";
 import { Acknowledgment } from "./entities/acknowledgment.entity";
 import { HandoffModule } from "./handoff/handoff.module";
 
+import { Referral } from "./entities/referral.entity";
+import { Attachment } from "./entities/attachment.entity";
+import { Notification } from "./entities/notification.entity";
+
 @Controller("health")
 class HealthController {
   @Get()
@@ -44,7 +48,7 @@ class HealthController {
       username: process.env.DB_USERNAME ?? "wardlink_app",
       password: process.env.DB_PASSWORD ?? "app_password_change_me",
       database: process.env.DB_NAME ?? "wardlink_ng",
-      entities: [Patient, Handoff, StructuredField, FieldOp, User, Device, Facility, Ward, Conflict, Note, Acknowledgment],
+      entities: [Patient, Handoff, StructuredField, FieldOp, User, Device, Facility, Ward, Conflict, Note, Acknowledgment, Referral, Attachment, Notification],
       synchronize: false, // always use migrations — never auto-sync schema
       migrations: ["dist/migrations/*.js"],
     }),

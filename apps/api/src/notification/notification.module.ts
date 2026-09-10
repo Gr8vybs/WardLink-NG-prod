@@ -1,10 +1,10 @@
 import { Module } from "@nestjs/common";
+import { NotificationService } from "./notification.service";
+import { NotificationController } from "./notification.controller";
 
-/**
- * NotificationModule
- * Queues escalation and referral notifications; tolerant of offline
- * recipients (delivered on next sync rather than requiring live push).
- * Placeholder — providers to be added.
- */
-@Module({})
+@Module({
+  controllers: [NotificationController],
+  providers: [NotificationService],
+  exports: [NotificationService],
+})
 export class NotificationModule {}
