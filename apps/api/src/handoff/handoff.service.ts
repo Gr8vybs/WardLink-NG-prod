@@ -12,6 +12,25 @@ import { withFacilityContext } from "../common/tenant-context";
 export class HandoffService {
   constructor(private readonly dataSource: DataSource) {}
 
+  /** The open handoff for a patient, if one exists — this is what a
+   * client checks before deciding whether to open an existing handoff
+   * or create a new one for the current shift. Deliberately returns
+   * null rather than throwing when there isn't one; "no open handoff
+   * yet" is a normal state, not an error. */
+  async findOpenForPatient(facilityId: string, patientId: string) {
+    return withFacilityContext(this.dataSource, facilityId, (qr) =>
+      qr.manager.getRepository(Handoff).findOne({
+        where: { patientId, status: "open" },
+      }),
+    );
+  }
+
+  async listForPatient(facilityId: string, patientId: string) {
+    return withFacilityContext(this.dataSource, facilityId, (qr) =>
+      qr.manager.getRepository(Handoff).find({ where: { patientId } }),
+    );
+  }
+
   async create(facilityId: string, authorId: string, dto: CreateHandoffDto) {
     return withFacilityContext(this.dataSource, facilityId, (qr) =>
       qr.manager.getRepository(Handoff).save({

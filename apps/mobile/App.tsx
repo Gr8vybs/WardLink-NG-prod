@@ -5,7 +5,9 @@ import { ApiClient } from "./src/api/client";
 import { SecureTokenStore } from "./src/storage/secureTokenStore";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
+import { PatientDetailScreen } from "./src/screens/PatientDetailScreen";
 import { colors } from "./src/theme/colors";
+import type { Patient } from "@wardlink/shared";
 
 // Set this to your machine's LAN IP (not localhost) when testing on a
 // physical phone via Expo Go — the phone can't reach your computer's
@@ -19,9 +21,8 @@ export default function App() {
   );
   const [checkingSession, setCheckingSession] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
-  // On launch, if a token is already stored from a previous session,
-  // skip straight to the dashboard instead of asking to log in again.
   useEffect(() => {
     (async () => {
       const token = await client.tokenStore.getToken();
@@ -38,14 +39,36 @@ export default function App() {
     );
   }
 
+  if (!loggedIn) {
+    return (
+      <>
+        <StatusBar style="light" />
+        <LoginScreen client={client} onLoggedIn={() => setLoggedIn(true)} />
+      </>
+    );
+  }
+
+  if (selectedPatient) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <PatientDetailScreen
+          client={client}
+          patient={selectedPatient}
+          onBack={() => setSelectedPatient(null)}
+        />
+      </>
+    );
+  }
+
   return (
     <>
-      <StatusBar style="light" />
-      {loggedIn ? (
-        <DashboardScreen client={client} onLoggedOut={() => setLoggedIn(false)} />
-      ) : (
-        <LoginScreen client={client} onLoggedIn={() => setLoggedIn(true)} />
-      )}
+      <StatusBar style="dark" />
+      <DashboardScreen
+        client={client}
+        onLoggedOut={() => setLoggedIn(false)}
+        onSelectPatient={setSelectedPatient}
+      />
     </>
   );
 }

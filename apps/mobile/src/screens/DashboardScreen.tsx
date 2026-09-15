@@ -8,9 +8,10 @@ import { colors } from "../theme/colors";
 interface Props {
   client: ApiClient;
   onLoggedOut: () => void;
+  onSelectPatient: (patient: Patient) => void;
 }
 
-export function DashboardScreen({ client, onLoggedOut }: Props) {
+export function DashboardScreen({ client, onLoggedOut, onSelectPatient }: Props) {
   const [facility, setFacility] = useState<Facility | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,13 +64,13 @@ export function DashboardScreen({ client, onLoggedOut }: Props) {
         contentContainerStyle={{ padding: 16, gap: 10 }}
         ListEmptyComponent={<Text style={styles.empty}>No patients yet.</Text>}
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <TouchableOpacity style={styles.card} onPress={() => onSelectPatient(item)}>
             <Text style={styles.patientName}>{item.demographics.name}</Text>
             <Text style={styles.patientMeta}>
               {item.demographics.age}
               {item.demographics.sex} · Allergy: {item.demographics.allergies}
             </Text>
-          </View>
+          </TouchableOpacity>
         )}
       />
     </View>
