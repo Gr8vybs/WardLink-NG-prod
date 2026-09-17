@@ -6,13 +6,17 @@ import { SecureTokenStore } from "./src/storage/secureTokenStore";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
 import { PatientDetailScreen } from "./src/screens/PatientDetailScreen";
+import { ConflictListScreen } from "./src/screens/ConflictListScreen";
+import { ConflictDetailScreen } from "./src/screens/ConflictDetailScreen";
 import { colors } from "./src/theme/colors";
-import type { Patient } from "@wardlink/shared";
+import type { Patient, Conflict } from "@wardlink/shared";
 
 // Set this to your machine's LAN IP (not localhost) when testing on a
 // physical phone via Expo Go — the phone can't reach your computer's
 // "localhost". e.g. "http://192.168.1.23:3000"
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+
+type Screen = "dashboard" | "patientDetail" | "conflictList" | "conflictDetail";
 
 export default function App() {
   const client = useMemo(
@@ -21,7 +25,9 @@ export default function App() {
   );
   const [checkingSession, setCheckingSession] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [screen, setScreen] = useState<Screen>("dashboard");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [selectedConflict, setSelectedConflict] = useState<Conflict | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -48,14 +54,44 @@ export default function App() {
     );
   }
 
-  if (selectedPatient) {
+  if (screen === "patientDetail" && selectedPatient) {
     return (
       <>
         <StatusBar style="dark" />
         <PatientDetailScreen
           client={client}
           patient={selectedPatient}
-          onBack={() => setSelectedPatient(null)}
+          onBack={() => setScreen("dashboard")}
+        />
+      </>
+    );
+  }
+
+  if (screen === "conflictList") {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <ConflictListScreen
+          client={client}
+          onBack={() => setScreen("dashboard")}
+          onSelectConflict={(conflict) => {
+            setSelectedConflict(conflict);
+            setScreen("conflictDetail");
+          }}
+        />
+      </>
+    );
+  }
+
+  if (screen === "conflictDetail" && selectedConflict) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <ConflictDetailScreen
+          client={client}
+          conflict={selectedConflict}
+          onBack={() => setScreen("conflictList")}
+          onResolved={() => setScreen("conflictList")}
         />
       </>
     );
@@ -67,7 +103,11 @@ export default function App() {
       <DashboardScreen
         client={client}
         onLoggedOut={() => setLoggedIn(false)}
-        onSelectPatient={setSelectedPatient}
+        onSelectPatient={(patient) => {
+          setSelectedPatient(patient);
+          setScreen("patientDetail");
+        }}
+        onOpenConflicts={() => setScreen("conflictList")}
       />
     </>
   );

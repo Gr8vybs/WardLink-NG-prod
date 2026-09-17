@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, FlatList } from "react-native";
 import { ApiClient } from "../api/client";
 import { getMyFacility, listPatients } from "../api/facility";
+import { decodeJwtPayload } from "../auth/decodeToken";
 import type { Facility, Patient } from "@wardlink/shared";
 import { colors } from "../theme/colors";
 
@@ -9,17 +10,25 @@ interface Props {
   client: ApiClient;
   onLoggedOut: () => void;
   onSelectPatient: (patient: Patient) => void;
+  onOpenConflicts: () => void;
 }
 
-export function DashboardScreen({ client, onLoggedOut, onSelectPatient }: Props) {
+export function DashboardScreen({ client, onLoggedOut, onSelectPatient, onOpenConflicts }: Props) {
   const [facility, setFacility] = useState<Facility | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Ward oversight (conflict queue) is only relevant to a ward head or
+  // director — a floor nurse doesn't need it cluttering their dashboard.
+  const [canSeeOversight, setCanSeeOversight] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
+        const token = await client.tokenStore.getToken();
+        const payload = token ? decodeJwtPayload(token) : null;
+        setCanSeeOversight(payload?.role === "ward_head" || payload?.role === "director");
+
         const [fac, pts] = await Promise.all([getMyFacility(client), listPatients(client)]);
         setFacility(fac);
         setPatients(pts);
@@ -51,9 +60,16 @@ export function DashboardScreen({ client, onLoggedOut, onSelectPatient }: Props)
           <Text style={styles.title}>My Ward</Text>
           <Text style={styles.subtitle}>{facility?.name ?? "Unknown facility"}</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout}>
-          <Text style={styles.logout}>Log out</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          {canSeeOversight && (
+            <TouchableOpacity onPress={onOpenConflicts} style={{ marginBottom: 6 }}>
+              <Text style={styles.oversightLink}>Oversight</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={handleLogout}>
+            <Text style={styles.logout}>Log out</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {error && <Text style={styles.error}>{error}</Text>}
@@ -88,9 +104,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
   },
+  headerActions: { alignItems: "flex-end" },
   title: { color: "#fff", fontSize: 18, fontWeight: "700" },
   subtitle: { color: "#8FA9B5", fontSize: 12, marginTop: 2 },
   logout: { color: "#8FE0C4", fontSize: 12, fontWeight: "600" },
+  oversightLink: { color: colors.mint, fontSize: 12, fontWeight: "700" },
   error: { color: colors.red, padding: 16 },
   empty: { color: colors.inkFaint, textAlign: "center", marginTop: 40 },
   card: {
