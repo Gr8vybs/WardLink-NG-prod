@@ -8,15 +8,20 @@ import { DashboardScreen } from "./src/screens/DashboardScreen";
 import { PatientDetailScreen } from "./src/screens/PatientDetailScreen";
 import { ConflictListScreen } from "./src/screens/ConflictListScreen";
 import { ConflictDetailScreen } from "./src/screens/ConflictDetailScreen";
+import { ReferralListScreen } from "./src/screens/ReferralListScreen";
+import { SendReferralScreen } from "./src/screens/SendReferralScreen";
 import { colors } from "./src/theme/colors";
 import type { Patient, Conflict } from "@wardlink/shared";
 
-// Set this to your machine's LAN IP (not localhost) when testing on a
-// physical phone via Expo Go — the phone can't reach your computer's
-// "localhost". e.g. "http://192.168.1.23:3000"
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
-type Screen = "dashboard" | "patientDetail" | "conflictList" | "conflictDetail";
+type Screen =
+  | "dashboard"
+  | "patientDetail"
+  | "conflictList"
+  | "conflictDetail"
+  | "referralList"
+  | "sendReferral";
 
 export default function App() {
   const client = useMemo(
@@ -62,7 +67,31 @@ export default function App() {
           client={client}
           patient={selectedPatient}
           onBack={() => setScreen("dashboard")}
+          onRefer={() => setScreen("sendReferral")}
         />
+      </>
+    );
+  }
+
+  if (screen === "sendReferral" && selectedPatient) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <SendReferralScreen
+          client={client}
+          patient={selectedPatient}
+          onBack={() => setScreen("patientDetail")}
+          onSent={() => setScreen("patientDetail")}
+        />
+      </>
+    );
+  }
+
+  if (screen === "referralList") {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <ReferralListScreen client={client} onBack={() => setScreen("dashboard")} />
       </>
     );
   }
@@ -108,6 +137,7 @@ export default function App() {
           setScreen("patientDetail");
         }}
         onOpenConflicts={() => setScreen("conflictList")}
+        onOpenReferrals={() => setScreen("referralList")}
       />
     </>
   );

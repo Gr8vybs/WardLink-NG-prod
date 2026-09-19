@@ -11,15 +11,14 @@ interface Props {
   onLoggedOut: () => void;
   onSelectPatient: (patient: Patient) => void;
   onOpenConflicts: () => void;
+  onOpenReferrals: () => void;
 }
 
-export function DashboardScreen({ client, onLoggedOut, onSelectPatient, onOpenConflicts }: Props) {
+export function DashboardScreen({ client, onLoggedOut, onSelectPatient, onOpenConflicts, onOpenReferrals }: Props) {
   const [facility, setFacility] = useState<Facility | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Ward oversight (conflict queue) is only relevant to a ward head or
-  // director — a floor nurse doesn't need it cluttering their dashboard.
   const [canSeeOversight, setCanSeeOversight] = useState(false);
 
   useEffect(() => {
@@ -61,6 +60,9 @@ export function DashboardScreen({ client, onLoggedOut, onSelectPatient, onOpenCo
           <Text style={styles.subtitle}>{facility?.name ?? "Unknown facility"}</Text>
         </View>
         <View style={styles.headerActions}>
+          <TouchableOpacity onPress={onOpenReferrals} style={{ marginBottom: 6 }}>
+            <Text style={styles.oversightLink}>Referrals</Text>
+          </TouchableOpacity>
           {canSeeOversight && (
             <TouchableOpacity onPress={onOpenConflicts} style={{ marginBottom: 6 }}>
               <Text style={styles.oversightLink}>Oversight</Text>

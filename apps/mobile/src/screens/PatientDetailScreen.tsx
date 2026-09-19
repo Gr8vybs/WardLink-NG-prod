@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { ApiClient, ApiError } from "../api/client";
 import {
   findOpenHandoff,
@@ -19,34 +20,32 @@ import {
   HandoffDetail,
 } from "../api/handoff";
 import { listWards } from "../api/ward";
+import { initiateAttachment, uploadAttachmentFile, listAttachmentsForPatient } from "../api/attachment";
 import { nextHlc } from "../hlc/hlc";
 import { decodeJwtPayload } from "../auth/decodeToken";
 import { PinPadModal } from "../components/PinPadModal";
-import type { Patient, StructuredField } from "@wardlink/shared";
+import { AttachmentThumbnail } from "../components/AttachmentThumbnail";
+import type { Patient, StructuredField, Attachment } from "@wardlink/shared";
 import { colors } from "../theme/colors";
 
 interface Props {
   client: ApiClient;
   patient: Patient;
   onBack: () => void;
+  onRefer: () => void;
 }
 
-export function PatientDetailScreen({ client, patient, onBack }: Props) {
+export function PatientDetailScreen({ client, patient, onBack, onRefer }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [handoffDetail, setHandoffDetail] = useState<HandoffDetail | null>(null);
   const [fields, setFields] = useState<StructuredField[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [noteText, setNoteText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
 
-  // Whether the CURRENT session needs a PIN before writing — true only
-  // for a bare shared-device session (authType "shared_device"). An
-  // individual login, or a session already PIN-verified, doesn't.
   const [requiresPin, setRequiresPin] = useState(false);
-
-  // Holds whichever write action is waiting on PIN verification, so the
-  // modal can call it back with the resulting attributed token once the
-  // PIN checks out. null means no PIN prompt is currently showing.
   const [pendingAction, setPendingAction] = useState<((token: string) => Promise<void>) | null>(null);
 
   const load = useCallback(async () => {
@@ -56,11 +55,13 @@ export function PatientDetailScreen({ client, patient, onBack }: Props) {
       const payload = token ? decodeJwtPayload(token) : null;
       setRequiresPin(payload?.authType === "shared_device");
 
-      const [openHandoff, structuredFields] = await Promise.all([
+      const [openHandoff, structuredFields, attachmentList] = await Promise.all([
         findOpenHandoff(client, patient.id),
         pullStructuredFields(client, patient.id),
+        listAttachmentsForPatient(client, patient.id),
       ]);
       setFields(structuredFields);
+      setAttachments(attachmentList);
 
       if (openHandoff) {
         const detail = await getHandoffDetail(client, openHandoff.id);
@@ -79,13 +80,6 @@ export function PatientDetailScreen({ client, patient, onBack }: Props) {
     load();
   }, [load]);
 
-  /**
-   * Runs a write action, transparently handling the PIN step when
-   * needed. `action` receives an override token to use for the request
-   * on a shared device (via client.requestWithToken), or undefined on
-   * a personal device (where the stored session token is already
-   * individually attributed and needs no override).
-   */
   const runAttributed = async (action: (overrideToken?: string) => Promise<void>) => {
     if (!requiresPin) {
       await action();
@@ -101,9 +95,6 @@ export function PatientDetailScreen({ client, patient, onBack }: Props) {
       setBusy(true);
       setError(null);
       try {
-        // TODO: real ward selection UX — this picks the first ward on
-        // the facility, which is fine for a single-ward test setup but
-        // not a real multi-ward hospital.
         const wards = await listWards(client);
         if (wards.length === 0) {
           setError("No wards exist for this facility yet — create one first.");
@@ -155,6 +146,38 @@ export function PatientDetailScreen({ client, patient, onBack }: Props) {
       }
     });
 
+  const handleAddAttachment = () =>
+    runAttributed(async (overrideToken) => {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setError("Photo library permission is needed to attach an image.");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.7,
+      });
+      if (result.canceled || result.assets.length === 0) return;
+
+      const asset = result.assets[0];
+      const mimeType = asset.mimeType ?? "image/jpeg";
+      const fileName = asset.fileName ?? `photo-${Date.now()}.jpg`;
+
+      setUploadingAttachment(true);
+      setError(null);
+      try {
+        const hlc = await nextHlc();
+        const attachment = await initiateAttachment(client, patient.id, mimeType, hlc, overrideToken);
+        await uploadAttachmentFile(client, attachment.id, { uri: asset.uri, name: fileName, type: mimeType }, overrideToken);
+        const refreshed = await listAttachmentsForPatient(client, patient.id);
+        setAttachments(refreshed);
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : "Failed to upload attachment.");
+      } finally {
+        setUploadingAttachment(false);
+      }
+    });
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -169,11 +192,18 @@ export function PatientDetailScreen({ client, patient, onBack }: Props) {
         <TouchableOpacity onPress={onBack}>
           <Text style={styles.back}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{patient.demographics.name}</Text>
-        <Text style={styles.subtitle}>
-          {patient.demographics.age}
-          {patient.demographics.sex} · Allergy: {patient.demographics.allergies}
-        </Text>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.title}>{patient.demographics.name}</Text>
+            <Text style={styles.subtitle}>
+              {patient.demographics.age}
+              {patient.demographics.sex} · Allergy: {patient.demographics.allergies}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={onRefer}>
+            <Text style={styles.referLink}>Refer</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16 }}>
@@ -190,6 +220,20 @@ export function PatientDetailScreen({ client, patient, onBack }: Props) {
             </View>
           ))
         )}
+
+        <Text style={[styles.sectionLabel, { marginTop: 20 }]}>ATTACHMENTS</Text>
+        <View style={styles.attachmentRow}>
+          {attachments.map((a) => (
+            <AttachmentThumbnail key={a.id} client={client} attachmentId={a.id} />
+          ))}
+          <TouchableOpacity style={styles.addAttachmentButton} onPress={handleAddAttachment} disabled={uploadingAttachment}>
+            {uploadingAttachment ? (
+              <ActivityIndicator size="small" color={colors.teal} />
+            ) : (
+              <Text style={styles.addAttachmentText}>+ Add</Text>
+            )}
+          </TouchableOpacity>
+        </View>
 
         <Text style={[styles.sectionLabel, { marginTop: 20 }]}>HANDOFF</Text>
         {!handoffDetail ? (
@@ -247,6 +291,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   centered: { flex: 1, backgroundColor: colors.bg, justifyContent: "center", alignItems: "center" },
   header: { backgroundColor: colors.navy, padding: 16, paddingTop: 48 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  referLink: { color: colors.mint, fontSize: 13, fontWeight: "700" },
   back: { color: "#8FE0C4", fontSize: 13, marginBottom: 8 },
   title: { color: "#fff", fontSize: 18, fontWeight: "700" },
   subtitle: { color: "#8FA9B5", fontSize: 12, marginTop: 2 },
@@ -263,6 +309,16 @@ const styles = StyleSheet.create({
   },
   fieldType: { fontSize: 10, fontWeight: "700", color: colors.inkFaint, marginBottom: 4 },
   fieldValue: { fontSize: 14, color: colors.ink },
+  attachmentRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  addAttachmentButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    backgroundColor: colors.tealSoft,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addAttachmentText: { color: colors.teal, fontSize: 12, fontWeight: "700" },
   button: {
     backgroundColor: colors.teal,
     borderRadius: 12,

@@ -8,11 +8,6 @@ import { Facility } from "../entities/facility.entity";
 export class FacilityService {
   constructor(private readonly dataSource: DataSource) {}
 
-  /** Bootstrap-only: creating a facility is how a tenant starts to exist,
-   * so it happens before any facility context can be set. Goes through
-   * create_facility(), a narrow SECURITY DEFINER function — see the
-   * migration for why a plain INSERT (even with a permissive policy)
-   * isn't enough on its own. */
   async create(dto: CreateFacilityDto) {
     const rows = await this.dataSource.query(
       `SELECT * FROM create_facility($1, $2, $3)`,
@@ -25,5 +20,13 @@ export class FacilityService {
     return withFacilityContext(this.dataSource, facilityId, (qr) =>
       qr.manager.getRepository(Facility).findOneOrFail({ where: { id: facilityId } }),
     );
+  }
+
+  /** For referral destination selection — every OTHER facility's basic
+   * directory info, not gated by the caller's own facility context
+   * since that's the whole point. See the migration for why this is a
+   * deliberate, narrow exception rather than a general facilities list. */
+  async listDirectory(): Promise<Array<{ id: string; name: string; type: string }>> {
+    return this.dataSource.query(`SELECT * FROM list_facility_directory()`);
   }
 }

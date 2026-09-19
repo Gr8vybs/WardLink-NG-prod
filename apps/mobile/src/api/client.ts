@@ -56,6 +56,52 @@ export class ApiClient {
     return this.doRequest<T>(path, token, init);
   }
 
+  /**
+   * Multipart file upload. Deliberately separate from request()/
+   * doRequest() rather than reusing them — those always set
+   * Content-Type: application/json, but a multipart body needs a
+   * boundary that only fetch itself can generate correctly when given a
+   * FormData body with NO Content-Type header set manually. Setting one
+   * by hand (even to "multipart/form-data") breaks the boundary and the
+   * server can't parse the upload.
+   */
+  async uploadFile<T>(path: string, formData: FormData, overrideToken?: string): Promise<T> {
+    const token = overrideToken ?? (await this.options.tokenStore.getToken());
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await fetch(`${this.options.baseUrl}${path}`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    const text = await res.text();
+    const parsed = text ? safeJsonParse(text) : undefined;
+
+    if (!res.ok) {
+      const message =
+        parsed && typeof parsed === "object" && "message" in parsed
+          ? String((parsed as { message: unknown }).message)
+          : `Upload failed with status ${res.status}`;
+      throw new ApiError(res.status, message, parsed);
+    }
+
+    return parsed as T;
+  }
+
+  /** Builds an authenticated URL + headers pair suitable for passing to
+   * RN's <Image source={{ uri, headers }} /> — Image doesn't go through
+   * this client's request path, so it needs the bearer token handed to
+   * it directly. */
+  async getAuthenticatedFileSource(path: string): Promise<{ uri: string; headers: Record<string, string> }> {
+    const token = await this.options.tokenStore.getToken();
+    return {
+      uri: `${this.options.baseUrl}${path}`,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    };
+  }
+
   private async doRequest<T>(
     path: string,
     token: string | null,
