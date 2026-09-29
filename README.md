@@ -313,7 +313,7 @@ Requires a local Postgres instance. The runtime connects as wardlink_app
 (created by the second migration); migrations themselves run as the admin 
 role set via ADMIN_DB_USERNAME/ADMIN_DB_PASSWORD.
 
-**`Mobile`**
+### Mobile
 cd apps/mobile
 npm install
 npx expo start
@@ -347,8 +347,8 @@ correct — including deliberately adversarial cases:
 - **`An origin facility's insert policy under RETURNING`**
 - **`A bare shared-device session attempting a write it shouldn't be allowed to make`**
 - **`the exact stale-write scenario the whole conflict-detection system exists to catch.`**
--
-- Several real bugs were caught this way rather than left latent — including a case where
+
+Several real bugs were caught this way rather than left latent — including a case where
 repo.save() silently "succeeded" on an RLS-blocked update because
 TypeORM doesn't check affected-row counts, and a queryRunner.query()
 tuple-shape mismatch that produced undefined fields instead of an error.
