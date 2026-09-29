@@ -396,8 +396,9 @@ decision, not a rewrite — but that migration itself hasn't been built.
 No CI beyond a placeholder GitHub Actions workflow — no automated
 test suite runs on push yet.
 
-## License
-MIT — see LICENSE.
+License
+​MIT — see LICENSE.
+
 That's the whole thing — architecture, every migration and why 
 each `SECURITY DEFINER` exception exists, the full API surface, 
 the mobile structure, setup steps, what was actually verified versus what 
