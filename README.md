@@ -396,7 +396,7 @@ decision, not a rewrite — but that migration itself hasn't been built.
 No CI beyond a placeholder GitHub Actions workflow — no automated
 test suite runs on push yet.
 
-License
+## License
 ​MIT — see LICENSE.
 
 That's the whole thing — architecture, every migration and why 
