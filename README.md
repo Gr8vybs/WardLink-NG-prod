@@ -397,4 +397,5 @@ No CI beyond a placeholder GitHub Actions workflow — no automated
 test suite runs on push yet.
 
 ## License
-​MIT — see [LICENSE].
+
+MIT — see [LICENSE](./LICENSE).
