@@ -307,47 +307,52 @@ cp .env.example .env      # fill in real values, especially JWT_SECRET and BOOTS
 npm install
 npx typeorm-ts-node-commonjs migration:run -d src/data-source.ts
 npm run start:dev
+```
 
-Requires a local Postgres instance. The runtime connects as wardlink_app
-(created by the second migration); migrations themselves run as the admin
+Requires a local Postgres instance. The runtime connects as wardlink_app 
+(created by the second migration); migrations themselves run as the admin 
 role set via ADMIN_DB_USERNAME/ADMIN_DB_PASSWORD.
-Mobile
 
+**`Mobile`**
 cd apps/mobile
 npm install
 npx expo start
 
-Set EXPO_PUBLIC_API_URL if the API isn't reachable at localhost:3000
-from wherever the app is running (a physical device generally needs your
-machine's LAN IP, unless both the app and API are on the same device via
-Expo Go + a proot-style dev environment, in which case localhost often
-just works).
-Install Expo Go on the test device, then open the exp:// URL printed
-by expo start (manual entry is more reliable than scanning a QR code
-from inside a terminal app). For an actual installable app rather than an
-Expo Go session: npx eas build --platform android --profile preview.
-First-time setup (creating your first facility)
+- **`Set EXPO_PUBLIC_API_URL`** - if the API isn't reachable at localhost:3000 
+from wherever the app is running (a physical device generally needs your machine's 
+LAN IP, unless both the app and API are on the same device via Expo Go + a proot-style 
+dev environment, in which case localhost often just works).
+- **`Install Expo Go`** - on the test device, then open the exp:// URL printed by expo start
+(manual entry is more reliable than scanning a QR code from inside a terminal app).
+- **`For an actual installable app rather than an Expo Go session:`**
+npx eas build --platform android --profile preview.
 
+**`First-time setup (creating your first facility)`**
+
+```bash
 curl -X POST http://localhost:3000/facilities \
   -H "Content-Type: application/json" \
   -H "X-Bootstrap-Secret: <your BOOTSTRAP_SECRET>" \
   -d '{"name":"Your Hospital","type":"hospital","ndprComplianceContact":"someone@example.com"}'
+```
 
-  Then seed at least one user directly in the database (no signup endpoint
-exists yet — see limitations) with a bcryptjs-hashed password before
-logging in from the app.
-How this was verified during development
+Then seed at least one user directly in the database (no signup endpoint exists yet — see limitations) 
+with a bcryptjs-hashed password before logging in from the app.
+
+## How this was verified during development
 Every backend module was verified against a real running Postgres +
 NestJS instance during development, not just written and assumed
-correct — including deliberately adversarial cases: a facility trying to
-claim its own referral (must be rejected), an origin facility's insert
-policy under RETURNING, a bare shared-device session attempting a write
-it shouldn't be allowed to make, and the exact stale-write scenario the
-whole conflict-detection system exists to catch. Several real bugs were
-caught this way rather than left latent — including a case where
+correct — including deliberately adversarial cases: 
+- **`A facility trying to claim its own referral (must be rejected)`**
+- **`An origin facility's insert policy under RETURNING`**
+- **`A bare shared-device session attempting a write it shouldn't be allowed to make`**
+- **`the exact stale-write scenario the whole conflict-detection system exists to catch.`**
+-
+- Several real bugs were caught this way rather than left latent — including a case where
 repo.save() silently "succeeded" on an RLS-blocked update because
 TypeORM doesn't check affected-row counts, and a queryRunner.query()
 tuple-shape mismatch that produced undefined fields instead of an error.
+
 The mobile client's networking/auth/queue logic was verified the same way
 wherever it doesn't require an actual RN runtime — direct requests against
 the live API, plus a response-simulating fake client for the sync engine's
@@ -358,7 +363,9 @@ NetInfo), was never executed in the development environment — no RN
 simulator was available. What's proven is everything underneath the UI:
 the actual request/response and data-integrity logic those screens depend
 on.
-Known limitations / honest gaps
+
+
+## Known limitations / honest gaps
 POST /facilities is gated by a shared secret, not real admin auth.
 Fine for local dev; before any real deployment this needs a proper
 internal onboarding path, not a public endpoint.
@@ -389,6 +396,10 @@ decision, not a rewrite — but that migration itself hasn't been built.
 No CI beyond a placeholder GitHub Actions workflow — no automated
 test suite runs on push yet.
 
-##License
+## License
 MIT — see LICENSE.
-That's the whole thing — architecture, every migration and why each `SECURITY DEFINER` exception exists, the full API surface, the mobile structure, setup steps, what was actually verified versus what wasn't, and an honest limitations section rather than glossing over the gaps. Just replace `README.md` in full with the content above.
+That's the whole thing — architecture, every migration and why 
+each `SECURITY DEFINER` exception exists, the full API surface, 
+the mobile structure, setup steps, what was actually verified versus what 
+wasn't, and an honest limitations section rather than glossing over the gaps. 
+Just replace `README.md` in full with the content above.
